@@ -53,6 +53,7 @@ var POCKET_ENDPOINTS = Object.freeze({
   restart: "pocket.restart",
   lanTokenRefresh: "token.lanRefresh",
   lanAuthSetEnabled: "lanAuth.setEnabled",
+  trustSetEnabled: "trust.setEnabled",
   lanSetOverride: "lan.setOverride",
   lanSetEnabled: "lan.setEnabled",
   mobileRightbarSetEnabled: "mobile.rightbar.setEnabled",
@@ -1943,6 +1944,9 @@ var zh2 = {
   "pinInvalid": "\u5BC6\u7801\u5FC5\u987B\u662F 8\u201364 \u4F4D\u82F1\u6587\u5B57\u6BCD\u6216\u6570\u5B57",
   "pinCustomHint": "\u81EA\u5B9A\u4E49\u540E\u5F00\u542F\u516C\u7F51\u4E0D\u518D\u81EA\u52A8\u6362\u65B0",
   "lanPinOff": "\u{1F513} \u5BC6\u7801\u5DF2\u5173\u95ED\uFF1A\u626B\u7801\u76F4\u8FDE\uFF0C\u65E0\u9700\u5BC6\u7801\uFF08\u4EC5\u540C\u4E00\u5C40\u57DF\u7F51\u8BBE\u5907\u53EF\u8BBF\u95EE\uFF1B\u516C\u7F51\u4ECD\u8981\u5BC6\u7801\uFF09",
+  "trustClients": "\u8FDC\u7A0B\u8BBE\u7F6E\uFF08\u63D2\u4EF6\u914D\u7F6E / \u6A21\u578B\u7BA1\u7406\uFF09",
+  "trustClientsOn": "\u2705 \u624B\u673A/\u8FDC\u7A0B\u9875\u9762\u53EF\u7F16\u8F91\u8BBE\u7F6E\uFF08\u63D2\u4EF6\u914D\u7F6E\u3001\u6A21\u578B\u7BA1\u7406\u7B49\uFF09\u3002\u5B89\u5168\u8FB9\u754C\u4E3A\u8BBF\u95EE\u5BC6\u7801\u2014\u2014\u516C\u7F51\u5F3A\u5236\u3001\u5C40\u57DF\u7F51\u5EFA\u8BAE\u5F00\u542F\u3002",
+  "trustClientsOff": "\u{1F512} \u8FDC\u7A0B\u9875\u9762\u53EA\u8BFB\uFF1A\u8BBE\u7F6E\u8BF7\u5728\u7535\u8111\u672C\u673A\uFF08127.0.0.1\uFF09\u4FEE\u6539\u3002",
   "lanStarting": "\u4EE3\u7406\u672A\u5C31\u7EEA\u2026",
   "mobileRightbar": "\u624B\u673A\u7AEF\u53F3\u8FB9\u680F",
   "mobileRightbarHint": "\u663E\u793A\u539F\u751F\u53F3\u8FB9\u680F\u5165\u53E3\uFF1B\u666E\u901A\u624B\u673A\u53EF\u6309\u9700\u5173\u95ED\uFF0C\u6298\u53E0\u5C4F\u5C55\u5F00\u540E\u4F7F\u7528\u66F4\u65B9\u4FBF",
@@ -2041,6 +2045,9 @@ var en2 = {
   "pinInvalid": "PIN must be 8\u201364 characters (letters and digits only)",
   "pinCustomHint": "custom PINs are not rotated on tunnel start",
   "lanPinOff": "\u{1F513} PIN off \u2014 scan & go, no PIN (LAN devices only; public still requires PIN)",
+  "trustClients": "Remote settings (plugin config / models)",
+  "trustClientsOn": "\u2705 Phone/remote pages can edit settings (plugin config, models, etc.). The access PIN is the trust boundary \u2014 mandatory for public, recommended for LAN.",
+  "trustClientsOff": "\u{1F512} Remote pages are read-only: change settings on the computer itself (127.0.0.1).",
   "lanStarting": "Proxy starting\u2026",
   "mobileRightbar": "Mobile right sidebar",
   "mobileRightbarHint": "Show the native right-sidebar entry; disable it for a compact phone header or keep it on for an unfolded display",
@@ -2305,6 +2312,13 @@ function PocketSettingsTab({ rpcCall, t }) {
     } catch {
     }
   };
+  const setTrust = async (on) => {
+    try {
+      const r = await call(POCKET_ENDPOINTS.trustSetEnabled, { on });
+      setStatus((s) => ({ ...s, trustProxiedClients: r.trustProxiedClients }));
+    } catch {
+    }
+  };
   const setMobileRightbar = async (on) => {
     try {
       const r = await call(POCKET_ENDPOINTS.mobileRightbarSetEnabled, { on });
@@ -2513,6 +2527,16 @@ function PocketSettingsTab({ rpcCall, t }) {
             (0, import_react2.createElement)("button", { style: { ...styles.btn, height: 26, padding: "0 10px", fontSize: 12 }, onClick: refreshLanPin }, t("refresh")),
             customBtn("lan"),
             status?.lanPinCustom ? (0, import_react2.createElement)("span", { style: { fontSize: 11, color: "var(--dsw-alias-state-warn-primary,#b45309)" } }, t("pinCustomHint")) : null
+          )
+        ),
+        // 远程设置开关（issue #58）：信任经代理客户端 → 设置页/模型管理远程可编辑
+        row(
+          t("trustClients"),
+          Switch(status?.trustProxiedClients === true, () => setTrust(status?.trustProxiedClients !== true)),
+          (0, import_react2.createElement)(
+            "div",
+            { style: { ...styles.muted, marginTop: 6 } },
+            status?.trustProxiedClients === true ? t("trustClientsOn") : t("trustClientsOff")
           )
         ),
         // 高级：手动选地址（默认收起）
