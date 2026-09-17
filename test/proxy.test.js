@@ -468,13 +468,13 @@ test('TRUSTED_TRANSPORT_SHIM（issue #58）：默认关闭，开启后注入 own
   });
   await new Promise((r) => up.listen(0, '127.0.0.1', r));
   const flag = { v: false };
+  let off = null;
   let on = null;
   try {
-    const off = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port } });
+    off = await createPocketProxy({ port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port } });
     const htmlOff = await (await fetch(`http://127.0.0.1:${off.port}/`)).text();
     assert.ok(!htmlOff.includes('ownsHost'), '默认（关闭）不注入 ownsHost');
     assert.ok(htmlOff.includes('data-dsh-pocket-transport-shim'), '基础 transport shim 仍在');
-    await off.close();
 
     on = await createPocketProxy({
       port: 0, host: '127.0.0.1', upstream: { host: '127.0.0.1', port: up.address().port },
@@ -488,6 +488,7 @@ test('TRUSTED_TRANSPORT_SHIM（issue #58）：默认关闭，开启后注入 own
     const htmlOff2 = await (await fetch(`http://127.0.0.1:${on.port}/`)).text();
     assert.ok(!htmlOff2.includes('ownsHost'), '关闭开关后立即停止注入（无需重启代理）');
   } finally {
+    if (off) await off.close();
     if (on) await on.close();
     await new Promise((r) => up.close(r));
   }
